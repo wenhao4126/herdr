@@ -1,0 +1,42 @@
+id = "wen"
+version = "2026.08.05.1"
+min_engine_version = 1
+updated_at = "2026-08-05T00:00:00Z"
+aliases = ["wen-agent"]
+
+# Wen 的终端界面使用中文状态标记。规则按优先级从审批、工作到待机匹配。
+
+[[rules]]
+id = "tool_approval"
+state = "blocked"
+priority = 1000
+region = "whole_recent"
+visible_blocker = true
+contains = ["工具审批：", "允许执行？[y/N]"]
+
+[[rules]]
+id = "agent_error"
+state = "blocked"
+priority = 900
+region = "whole_recent"
+visible_blocker = true
+contains = ["[Agent 错误]"]
+
+[[rules]]
+id = "tool_working"
+state = "working"
+priority = 800
+region = "bottom_non_empty_lines(8)"
+visible_working = true
+any = [
+  { contains = ["[思考]"] },
+  { contains = ["[工具]"] },
+]
+
+[[rules]]
+id = "chat_prompt_idle"
+state = "idle"
+priority = 900
+region = "bottom_non_empty_lines(3)"
+visible_idle = true
+line_regex = ['^你> ?$']

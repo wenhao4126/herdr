@@ -62,10 +62,11 @@ pub enum Agent {
     Kilo,
     Qodercli,
     Maki,
+    Wen,
 }
 
 impl Agent {
-    pub const ALL: [Self; 21] = [
+    pub const ALL: [Self; 22] = [
         Self::Pi,
         Self::Claude,
         Self::Codex,
@@ -87,9 +88,10 @@ impl Agent {
         Self::Kilo,
         Self::Qodercli,
         Self::Maki,
+        Self::Wen,
     ];
 
-    pub const SCREEN_MANIFEST_AGENTS: [Self; 19] = [
+    pub const SCREEN_MANIFEST_AGENTS: [Self; 20] = [
         Self::Pi,
         Self::Claude,
         Self::Codex,
@@ -109,6 +111,7 @@ impl Agent {
         Self::Kilo,
         Self::Qodercli,
         Self::Maki,
+        Self::Wen,
     ];
 }
 
@@ -135,6 +138,7 @@ pub fn agent_label(agent: Agent) -> &'static str {
         Agent::Kilo => "kilo",
         Agent::Qodercli => "qodercli",
         Agent::Maki => "maki",
+        Agent::Wen => "wen",
     }
 }
 
@@ -161,6 +165,7 @@ pub fn interactive_agent_executable(agent: Agent) -> &'static str {
         Agent::Kilo => "kilo",
         Agent::Qodercli => "qodercli",
         Agent::Maki => "maki",
+        Agent::Wen => "wen",
     }
 }
 
@@ -197,6 +202,7 @@ fn lookup_agent(name: &str) -> Option<Agent> {
         "kilo" | "kilo-code" | "kilo code" => Some(Agent::Kilo),
         "qodercli" | "qoderclicn" | "qoder" | "qodercn" => Some(Agent::Qodercli),
         "maki" => Some(Agent::Maki),
+        "wen" | "wen-agent" => Some(Agent::Wen),
         _ => None,
     }
 }
@@ -690,6 +696,7 @@ mod tests {
         assert_eq!(identify_agent("kilo"), Some(Agent::Kilo));
         assert_eq!(identify_agent("kilo-code"), Some(Agent::Kilo));
         assert_eq!(identify_agent("maki"), Some(Agent::Maki));
+        assert_eq!(identify_agent("wen"), Some(Agent::Wen));
     }
 
     #[test]
@@ -715,6 +722,7 @@ mod tests {
         assert_eq!(parse_agent_label("grok-build"), Some(Agent::Grok));
         assert_eq!(parse_agent_label("hermes-agent"), Some(Agent::Hermes));
         assert_eq!(parse_agent_label("maki"), Some(Agent::Maki));
+        assert_eq!(parse_agent_label("wen-agent"), Some(Agent::Wen));
         assert_eq!(parse_agent_label("kilo-code"), Some(Agent::Kilo));
     }
 
@@ -751,6 +759,7 @@ mod tests {
             (Agent::Kilo, "kilo"),
             (Agent::Qodercli, "qodercli"),
             (Agent::Maki, "maki"),
+            (Agent::Wen, "wen"),
         ];
         assert_eq!(expected.len(), Agent::ALL.len());
         for (agent, executable) in expected {
