@@ -1,0 +1,64 @@
+id = "dsh-tui"
+version = "2026.08.26.1"
+min_engine_version = 1
+updated_at = "2026-08-26T00:00:00Z"
+aliases = ["dst", "dsh_tui"]
+
+# dsh-tui 是 DeepSeek Harness 的 TUI 界面。审批条显示 Claude Code 风格
+# 的等待审批面板；问答面板以 📋 提问 开头；工作状态由状态栏的
+# `esc 中断`（英文为 `esc to interrupt`）提示标识。
+
+[[rules]]
+id = "approval_panel"
+state = "blocked"
+priority = 1100
+region = "whole_recent"
+visible_blocker = true
+contains = ["⏳ 等待审批 · ", "要允许这次操作吗？"]
+
+[[rules]]
+id = "question_panel"
+state = "blocked"
+priority = 1050
+region = "whole_recent"
+visible_blocker = true
+contains = ["📋 提问 · "]
+
+[[rules]]
+id = "statusline_working"
+state = "working"
+priority = 900
+region = "bottom_non_empty_lines(3)"
+visible_working = true
+any = [
+  { contains = ["esc 中断"] },
+  { contains = ["esc to interrupt"] },
+]
+
+[[rules]]
+id = "tool_running"
+state = "working"
+priority = 850
+region = "bottom_non_empty_lines(12)"
+visible_working = true
+any = [
+  { contains = ["⎿ Running…"] },
+  { contains = ["Running… (0s)"] },
+  { contains = ["Running… (0."] },
+]
+
+[[rules]]
+id = "prompt_idle"
+state = "idle"
+priority = 300
+region = "bottom_non_empty_lines(3)"
+visible_idle = true
+line_regex = ['^\s*❯']
+not = [
+  { any = [
+    { contains = ["esc 中断"] },
+    { contains = ["esc to interrupt"] },
+    { contains = ["⏳ 等待审批"] },
+    { contains = ["📋 提问"] },
+  ] },
+]

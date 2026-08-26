@@ -63,10 +63,12 @@ pub enum Agent {
     Qodercli,
     Maki,
     Wen,
+    Ocr,
+    DshTui,
 }
 
 impl Agent {
-    pub const ALL: [Self; 22] = [
+    pub const ALL: [Self; 24] = [
         Self::Pi,
         Self::Claude,
         Self::Codex,
@@ -89,9 +91,11 @@ impl Agent {
         Self::Qodercli,
         Self::Maki,
         Self::Wen,
+        Self::Ocr,
+        Self::DshTui,
     ];
 
-    pub const SCREEN_MANIFEST_AGENTS: [Self; 20] = [
+    pub const SCREEN_MANIFEST_AGENTS: [Self; 22] = [
         Self::Pi,
         Self::Claude,
         Self::Codex,
@@ -112,6 +116,8 @@ impl Agent {
         Self::Qodercli,
         Self::Maki,
         Self::Wen,
+        Self::Ocr,
+        Self::DshTui,
     ];
 }
 
@@ -139,6 +145,8 @@ pub fn agent_label(agent: Agent) -> &'static str {
         Agent::Qodercli => "qodercli",
         Agent::Maki => "maki",
         Agent::Wen => "wen",
+        Agent::Ocr => "ocr",
+        Agent::DshTui => "dsh-tui",
     }
 }
 
@@ -166,6 +174,8 @@ pub fn interactive_agent_executable(agent: Agent) -> &'static str {
         Agent::Qodercli => "qodercli",
         Agent::Maki => "maki",
         Agent::Wen => "wen",
+        Agent::Ocr => "ocr",
+        Agent::DshTui => "dsh-tui",
     }
 }
 
@@ -203,6 +213,8 @@ fn lookup_agent(name: &str) -> Option<Agent> {
         "qodercli" | "qoderclicn" | "qoder" | "qodercn" => Some(Agent::Qodercli),
         "maki" => Some(Agent::Maki),
         "wen" | "wen-agent" => Some(Agent::Wen),
+        "ocr" | "orc" => Some(Agent::Ocr),
+        "dsh-tui" | "dst" | "dsh_tui" => Some(Agent::DshTui),
         _ => None,
     }
 }
@@ -356,7 +368,7 @@ fn normalized_process_name(process: &crate::platform::ForegroundProcess) -> Stri
 
 fn wrapped_agent_name_from_runtime_argv(runtime: &str, argv: Option<&[String]>) -> Option<String> {
     let argv = argv?;
-    let runtime = normalized_agent_lookup_name(path_basename(runtime));
+    let runtime = normalized_runtime_name(runtime);
 
     match runtime.as_str() {
         "node" | "bun" => script_arg_agent_name(argv, &["-e", "--eval", "-p", "--print"], &[]),
@@ -598,8 +610,21 @@ fn process_priority(process: &crate::platform::ForegroundProcess, normalized_nam
     1
 }
 
-fn is_generic_runtime_or_shell(name: &str) -> bool {
+fn normalized_runtime_name(name: &str) -> String {
     let name = normalized_agent_lookup_name(path_basename(name));
+    if name.starts_with("node-") || name.starts_with("node_") || name.starts_with("node.") {
+        "node".to_string()
+    } else if name.starts_with("bun-") || name.starts_with("bun_") {
+        "bun".to_string()
+    } else if name.starts_with("python") {
+        "python3".to_string()
+    } else {
+        name
+    }
+}
+
+fn is_generic_runtime_or_shell(name: &str) -> bool {
+    let name = normalized_runtime_name(name);
     matches!(
         name.as_str(),
         "sh" | "bash"
@@ -697,6 +722,12 @@ mod tests {
         assert_eq!(identify_agent("kilo-code"), Some(Agent::Kilo));
         assert_eq!(identify_agent("maki"), Some(Agent::Maki));
         assert_eq!(identify_agent("wen"), Some(Agent::Wen));
+        assert_eq!(identify_agent("ocr"), Some(Agent::Ocr));
+        assert_eq!(identify_agent("orc"), Some(Agent::Ocr));
+        assert_eq!(identify_agent("dsh-tui"), Some(Agent::DshTui));
+        assert_eq!(identify_agent("dsh-tui.js"), Some(Agent::DshTui));
+        assert_eq!(identify_agent("dst"), Some(Agent::DshTui));
+        assert_eq!(identify_agent("dsh_tui"), Some(Agent::DshTui));
     }
 
     #[test]
@@ -723,6 +754,9 @@ mod tests {
         assert_eq!(parse_agent_label("hermes-agent"), Some(Agent::Hermes));
         assert_eq!(parse_agent_label("maki"), Some(Agent::Maki));
         assert_eq!(parse_agent_label("wen-agent"), Some(Agent::Wen));
+        assert_eq!(parse_agent_label("orc"), Some(Agent::Ocr));
+        assert_eq!(parse_agent_label("dsh-tui"), Some(Agent::DshTui));
+        assert_eq!(parse_agent_label("dst"), Some(Agent::DshTui));
         assert_eq!(parse_agent_label("kilo-code"), Some(Agent::Kilo));
     }
 
@@ -760,6 +794,8 @@ mod tests {
             (Agent::Qodercli, "qodercli"),
             (Agent::Maki, "maki"),
             (Agent::Wen, "wen"),
+            (Agent::Ocr, "ocr"),
+            (Agent::DshTui, "dsh-tui"),
         ];
         assert_eq!(expected.len(), Agent::ALL.len());
         for (agent, executable) in expected {
@@ -825,6 +861,23 @@ mod tests {
         assert_eq!(
             identify_agent_in_job(&job),
             Some((Agent::Codex, "codex".to_string()))
+        );
+    }
+
+    #[test]
+    fn identify_agent_in_job_detects_dsh_tui_launcher() {
+        let job = crate::platform::ForegroundJob {
+            process_group_id: 123,
+            processes: vec![
+                foreground_process(1, "node-MainThread", &["node", "/home/wen/.npm-global/bin/dst"]),
+                foreground_process(2, "node-MainThread", &["node", "/home/wen/.dsh/profiles/dsh-tui/node_modules/@deepseek-harness-tui/dsh-tui/bin/dsh-tui.js"]),
+                foreground_process(3, "node-MainThread", &["node", "/home/wen/.npm-global/bin/dsh", "--profile", "dsh-tui"]),
+            ],
+        };
+
+        assert_eq!(
+            identify_agent_in_job(&job),
+            Some((Agent::DshTui, "dsh-tui".to_string()))
         );
     }
 

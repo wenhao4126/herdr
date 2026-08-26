@@ -301,6 +301,30 @@ fn all_bundled_manifests_parse_and_validate() {
 }
 
 #[test]
+fn dsh_tui_manifest_detects_idle_working_and_blocked_states() {
+    let idle = explain(
+        Agent::DshTui,
+        "已完成。\n❯\n deepseek-v4-flash-vision-exp · max · ctx 12% · ? 查看快捷键",
+    );
+    assert_eq!(idle.state, AgentState::Idle);
+    assert!(idle.visible_idle);
+
+    let working = explain(
+        Agent::DshTui,
+        "⚓ 思考 · 5s\n✽ ⏵ 正在工作 · 工具x2\n❯\n deepseek-v4-flash-vision-exp · max · ctx 12% · esc 中断",
+    );
+    assert_eq!(working.state, AgentState::Working);
+    assert!(working.visible_working);
+
+    let blocked = explain(
+        Agent::DshTui,
+        "⏳ 等待审批 · bash_tool\n$ sleep 1\n要允许这次操作吗？\n1. 允许（仅本次）\n2. 拒绝\n↑/↓ 选择 · Enter 确认 · Esc 拒绝",
+    );
+    assert_eq!(blocked.state, AgentState::Blocked);
+    assert!(blocked.visible_blocker);
+}
+
+#[test]
 fn devin_manifest_detects_idle_working_and_blocked_states() {
     let idle = explain(
         Agent::Devin,

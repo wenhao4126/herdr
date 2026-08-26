@@ -1,0 +1,26 @@
+id = "ocr"
+version = "2026.08.06.1"
+min_engine_version = 1
+updated_at = "2026-08-06T00:00:00Z"
+aliases = ["orc"]
+
+# OCR 是只读代码审计工具：执行审计时显示工具进度，结束后回到 shell。
+
+[[rules]]
+id = "review_working"
+state = "working"
+priority = 800
+region = "bottom_non_empty_lines(12)"
+visible_working = true
+any = [
+  { contains = ["[ocr]   ▶"] },
+  { contains = ["[ocr]   ..."] },
+]
+
+[[rules]]
+id = "review_shell_idle"
+state = "idle"
+priority = 700
+region = "bottom_non_empty_lines(3)"
+visible_idle = true
+line_regex = ['^➜ .*git.*✗ ?$']
